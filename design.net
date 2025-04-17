@@ -1,0 +1,88 @@
+* \\vems-pon-s027.vnet.valeo.com\users$\[C-F]\ELAKHDAR\Safety  Project\Projets\eBB eFMEA\b748049\b748049 schematic efmea.sxsch
+*#SIMETRIX
+
+.PARAM V_P14V=14
+.PARAM U3100_Gain={Gain*gausssigma(tolGain/100,4)}
+.PARAM IN=200
+
+.PARAM Gain=50 RINT=10000
+.PARAM tolGain=1.34004272108319 
+.PARAM number_of_bits=12 LSB_error=5
+.PARAM Leakage_current=3.5e-07 offset=-250  a=0.122100122100122
+.PARAM VREF=2.5 VCC=5 
+.PARAM tolVCC=1, tolVREF=1
+
+.PARAM R3100=10 R3102=10 R3103=1000 Rshunt=0.0002
+.PARAM tolR3100=2.3 tolR3102=2.3 tolR3103=2.3 tolRshunt=2.07
+.PARAM C3100=1e-07 C3102=1e-07 
+.PARAM tolC3100=30 tolC3102=30 
+
+
+
+X$V1 VCC 0 VDCSimetrixwc params: value=5 tolerance=1 pinnames: P M
+X$V2 VREF 0 VDCSimetrixwc params: value=2.5 tolerance=1 pinnames: P M
+Ibias_pos VOS_offset_P 0 {-5e-6}
+X$H1 IN 0 Rshunt_1 0 H1$TP_CCVS params: gain=1 pinnames: P N CP CN
+.subckt H1$TP_CCVS 1 2 3 4
+H1 1 2 V1 {gain} 
+V1 3 4
+.ends
+X$C3100 R3100_1 C3100_2 CSimetrixwcICno params: value=100n tolerance=30 ICval=0 pinnames: 1 2
+X$ARB1 ADC_output I_MEASURE $$arbsourceARB1 pinnames: adc OUT 
+.subckt $$arbsourceARB1 adc OUT 
+B$OUT OUT 0 V=V(ADC)*0.122100122100122+250 
+.ends
+X$C3102 VOUT 0 CSimetrixwcICno params: value=100n tolerance=30 ICval=0 pinnames: 1 2
+X$Rshunt Rshunt_1 IN_N RSimetrixwc params: value=200u tolerance=2.07 pinnames: 1 2
+X$U1 VCC 0 VOUT ADC_output ADC_gen_wc_integer params: N=10 LSB_error=8 Ilkg=0 Ilkg_var=0 pinnames: Vcc gnd in out
+X$U3100 Rint_pos_P Rf_neg_N U3100_OUT VCC 0 Op_amp_gen_wc params: Vos=0 Vos_vvar=0  gain=50  gain_var=1.3400427 Headroom_pos=30m Headroom_neg=5m Headroom_pos_var=0 Headroom_neg_var=0 pinnames: IN_p IN_m OUT Vcc Vee
+Rint_neg Rf_neg_N C3100_2 10k
+X$VOS_offset VOS_offset_P R3100_1 VDCSimetrixwc params: value=17.505u tolerance=1.341k pinnames: P M
+V_HV V_HV_P 0 14
+X$R3100 R3100_1 IN_N RSimetrixwc params: value=10 tolerance=2.3 pinnames: 1 2
+X$R3102 C3100_2 Rshunt_1 RSimetrixwc params: value=10 tolerance=2.3 pinnames: 1 2
+X$R3103 U3100_OUT VOUT RSimetrixwc params: value=1k tolerance=2.3 pinnames: 1 2
+Rf_pos1 VREF Rint_pos_P 500k
+.GRAPH VOUT curveLabel= VOUT nowarn=true ylog=auto xlog=auto analysis=tran|ac|dc GUID="5000225a-d3bf-43c7-b663-0e6857cb8df5" disabled=false PROBEREF=Probe1  
+Rint_pos Rint_pos_P VOS_offset_P 10k
+Ibias_neg C3100_2 0 {-5e-6}
+IN V_HV_P IN_N 200
+Rf_neg U3100_OUT Rf_neg_N 500k
+.tran 1m
+.options KeepAll
++  openSensTable
++  openWcReport
+.sensmeas tran "mean1(VOUT)"
+.sensmeas tran "Mean1(I_MEASURE)"
+** Imported from: C:\Valeo_Spice_models\Valeo_models\Valeo_monte_carlo.lib
+.SUBCKT Op_amp_gen_wc in_p in_m out Vcc Vee PARAMS: Vos=0 Vos_vvar=1m gain=1e4 gain_var=0 Headroom_pos=0 Headroom_neg=0 Headroom_pos_var=0 Headroom_neg_var=0
+Vos in_p in_p2 { -Vos-Vos_vvar*(wc(1)-1) }
+E_opamp out 0 value { limit( gain*wc(gain_var/100)*(V(in_p2,in_m)),V(Vee)+Headroom_neg*wc(Headroom_neg_var/100),V(Vcc)-Headroom_pos*wc(Headroom_pos_var/100) ) }
+.ENDS
+
+** Imported from: C:\Valeo_Spice_models\Valeo_models\Valeo_monte_carlo.lib
+.SUBCKT ADC_gen_wc_integer Vcc gnd in out PARAMS: N=10 LSB_error=8 Ilkg=0 Ilkg_var=0
+E_ADC  out 0   value { floor( V(in,gnd) / ( V(Vcc,gnd)+1p ) * ((2**N)-1) + 0.5 + LSB_error*(WC(1)-1) ) }
+G_Ilkg in  gnd value { Ilkg + Ilkg_var*(wc(1)-1) }
+.ENDS
+
+** Imported from: C:\Valeo_Spice_models\Valeo_models\Valeo_monte_carlo.lib
+.SUBCKT RSimetrixwc  1  2 PARAMS: VALUE = 1k TOLERANCE = 5
+R_disp    1  2   {Value*wc(TOLERANCE/100)}
+.ENDS
+
+** Imported from: C:\Valeo_Spice_models\Valeo_models\Valeo_monte_carlo.lib
+.SUBCKT CSimetrixwcICno  1  2 PARAMS: VALUE = 1n TOLERANCE = 5 ICval = 0
+C_disp    1  2   {Value*wc(TOLERANCE/100)}
+.ENDS
+
+** Imported from: C:\Valeo_Spice_models\Valeo_models\Valeo_monte_carlo.lib
+.SUBCKT VDCSimetrixwc P M PARAMS: VALUE = 1 TOLERANCE = 5 
+VDC_disp    P  M   {Value*wc(TOLERANCE/100)}
+.ENDS
+***********************
+* Ideal current source
+***********************
+*
+
+
